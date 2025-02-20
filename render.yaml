@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: php-api
+    env: docker
+    repo: https://github.com/CodeHulk614/test
+    branch: main
+    region: oregon
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: DB_SERVER
+        value: LAPTOP-SQTM1B1G\SQLEXPRESS.database.windows.net
+      - key: TERA
+        value: TERA
+      - key: 
+        value: 
+      - key: 
+        value: 
