@@ -1,14 +1,16 @@
-# Use the official PHP image with Apache
+# Use an official PHP image with Apache
 FROM php:8.1-apache
 
-# Install dependencies
+# Install required dependencies
 RUN apt-get update && apt-get install -y \
     gnupg2 \
     curl \
+    software-properties-common \
     apt-transport-https \
     unixodbc \
     unixodbc-dev \
-    libgssapi-krb5-2
+    libgssapi-krb5-2 \
+    ca-certificates
 
 # Add Microsoft repository for ODBC Driver
 RUN curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
@@ -16,9 +18,10 @@ RUN curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
     apt-get update
 
 # Install Microsoft ODBC Driver & SQLCMD tools
-RUN ACCEPT_EULA=Y apt-get install -y msodbcsql18 mssql-tools && \
+RUN ACCEPT_EULA=Y apt-get install -y msodbcsql18 mssql-tools unixodbc-dev && \
     echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc && \
-    source ~/.bashrc
+    echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> /etc/profile && \
+    apt-get clean
 
 # Install PHP SQL Server extensions
 RUN docker-php-ext-configure pdo_sqlsrv --with-pdo-odbc=unixODBC,/usr && \
