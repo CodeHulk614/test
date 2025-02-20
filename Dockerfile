@@ -1,10 +1,10 @@
 # Use an official PHP image with Apache
 FROM php:8.1-apache
 
-# Install system dependencies
+# Install dependencies
 RUN apt-get update && apt-get install -y \
-    gnupg2 \
     curl \
+    gnupg2 \
     software-properties-common \
     apt-transport-https \
     unixodbc \
@@ -13,18 +13,22 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     && apt-get clean
 
-# Add Microsoft repository for ODBC Driver (using msodbcsql17 instead of 18)
-RUN curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
-    curl -fsSL https://packages.microsoft.com/config/debian/11/prod.list | tee /etc/apt/sources.list.d/mssql-release.list && \
-    apt-get update
+# Manually download and install Microsoft ODBC Driver
+RUN curl -o /tmp/msodbcsql17.deb https://packages.microsoft.com/debian/11/prod/pool/main/m/msodbcsql17/msodbcsql17_17.10.4.1-1_amd64.deb && \
+    dpkg -i /tmp/msodbcsql17.deb || apt-get -f install -y && \
+    rm -f /tmp/msodbcsql17.deb
 
-# Install Microsoft ODBC Driver 17 and SQLCMD tools
-RUN ACCEPT_EULA=Y apt-get install -y msodbcsql17 mssql-tools unixodbc-dev && \
-    echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc && \
+# Manually download and install Microsoft SQLCMD tools
+RUN curl -o /tmp/mssql-tools.deb https://packages.microsoft.com/debian/11/prod/pool/main/m/mssql-tools/mssql-tools_17.10.4.1-1_amd64.deb && \
+    dpkg -i /tmp/mssql-tools.deb || apt-get -f install -y && \
+    rm -f /tmp/mssql-tools.deb
+
+# Add SQLCMD tools to PATH
+RUN echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc && \
     echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> /etc/profile && \
     apt-get clean
 
-# Install PHP extensions for SQL Server
+# Install PHP SQL Server extensions
 RUN docker-php-ext-configure pdo_sqlsrv --with-pdo-odbc=unixODBC,/usr && \
     docker-php-ext-install pdo pdo_sqlsrv sqlsrv
 
