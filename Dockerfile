@@ -1,30 +1,28 @@
 # Use the official PHP image with Apache
 FROM php:8.1-apache
 
-# Update and install required system dependencies
+# Install dependencies
 RUN apt-get update && apt-get install -y \
     gnupg2 \
+    curl \
+    apt-transport-https \
     unixodbc \
     unixodbc-dev \
-    apt-transport-https \
-    curl \
-    libcurl4-openssl-dev \
-    libssl-dev
+    libgssapi-krb5-2
 
-# Add Microsoft ODBC Driver Repository
-RUN curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
-    && curl -fsSL https://packages.microsoft.com/config/debian/$(lsb_release -rs)/prod.list | tee /etc/apt/sources.list.d/mssql-release.list \
-    && apt-get update
+# Add Microsoft repository for ODBC Driver
+RUN curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
+    curl -fsSL https://packages.microsoft.com/config/debian/11/prod.list | tee /etc/apt/sources.list.d/mssql-release.list && \
+    apt-get update
 
-# Install Microsoft ODBC Driver & Dependencies
-RUN ACCEPT_EULA=Y apt-get install -y \
-    msodbcsql18 \
-    mssql-tools \
-    unixodbc-dev
+# Install Microsoft ODBC Driver & SQLCMD tools
+RUN ACCEPT_EULA=Y apt-get install -y msodbcsql18 mssql-tools && \
+    echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc && \
+    source ~/.bashrc
 
-# Install PHP SQLSRV and PDO_SQLSRV extensions
-RUN docker-php-ext-configure pdo_sqlsrv --with-pdo-odbc=unixODBC,/usr \
-    && docker-php-ext-install pdo pdo_sqlsrv sqlsrv
+# Install PHP SQL Server extensions
+RUN docker-php-ext-configure pdo_sqlsrv --with-pdo-odbc=unixODBC,/usr && \
+    docker-php-ext-install pdo pdo_sqlsrv sqlsrv
 
 # Copy project files to the Apache root directory
 COPY . /var/www/html/
